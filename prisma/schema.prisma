@@ -1,0 +1,425 @@
+// Furniture store — PostgreSQL schema (Prisma 7, driver adapter: @prisma/adapter-pg)
+// Money is stored in the smallest currency unit (paise for INR, cents for USD).
+// Change the schema with `npm run db:migrate:dev -- --name <change>`; production uses `prisma migrate deploy`.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- enums
+
+/// CUSTOMER covers both retail shoppers and business buyers (see accountType).
+/// STAFF gets only the admin modules listed in `permissions`. ADMIN gets everything.
+enum Role {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+/// A CUSTOMER with accountType BUSINESS is a "business buyer".
+enum AccountType {
+  RETAIL
+  BUSINESS
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum InventoryReason {
+  OPENING
+  RESTOCK
+  RESERVE
+  RELEASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  DAMAGED
+  CANCEL
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  PAYMENT_FAILED
+  EXPIRED
+  REFUNDED
+}
+
+/// Where the order's stock is: held for a pending payment, committed to a paid order, or given back.
+enum StockState {
+  NONE
+  RESERVED
+  COMMITTED
+  RELEASED
+}
+
+enum Currency {
+  INR
+  USD
+}
+
+enum PaymentProvider {
+  RAZORPAY
+  STRIPE
+  DEMO
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum PurchaseType {
+  RETAIL
+  BUSINESS
+}
+
+enum EnquiryType {
+  EXPORT
+  DOMESTIC
+  BULK
+  CUSTOM
+  GENERAL
+}
+
+enum EnquiryStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
+// ---------------------------------------------------------------- people & access
+
+model User {
+  id                String      @id @default(cuid())
+  name              String
+  email             String      @unique
+  passwordHash      String
+  phone             String?
+  role              Role        @default(CUSTOMER)
+  /// Admin modules a STAFF member may use, e.g. ["orders","inventory"]. Ignored for ADMIN and CUSTOMER.
+  permissions       String[]    @default([])
+  accountType       AccountType @default(RETAIL)
+  companyName       String?
+  taxId             String?
+  country           String      @default("India")
+  address           String?
+  businessVerified  Boolean     @default(false)
+  isActive          Boolean     @default(true)
+
+  // security
+  /// Incremented to sign the user out everywhere immediately (revocation, role change, password reset).
+  sessionVersion    Int         @default(0)
+  mfaEnabled        Boolean     @default(false)
+  /// TOTP secret, AES-256-GCM encrypted with MFA_ENCRYPTION_KEY.
+  mfaSecretEnc      String?
+  /// SHA-256 hashes of unused one-time recovery codes.
+  mfaRecoveryCodes  String[]    @default([])
+  failedLogins      Int         @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  orders            Order[]
+  inventoryLogs     InventoryLog[]
+  auditLogs         AuditLog[]
+  invitesSent       StaffInvite[] @relation("InvitedBy")
+  enquiryNotes      EnquiryNote[]
+  orderEvents       OrderEvent[]
+
+  @@index([role])
+}
+
+model StaffInvite {
+  id          String    @id @default(cuid())
+  email       String
+  name        String
+  role        Role
+  permissions String[]  @default([])
+  /// SHA-256 of the one-time token sent in the invite link; the token itself is never stored.
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String?
+  action     String
+  targetType String?
+  targetId   String?
+  details    Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+// ---------------------------------------------------------------- catalogue
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  sortOrder   Int        @default(0)
+  parentId    String?
+  parent      Category?  @relation("Subcategories", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("Subcategories")
+  createdAt   DateTime   @default(now())
+  products    Product[]
+
+  @@index([parentId])
+}
+
+model Product {
+  id                String        @id @default(cuid())
+  name              String
+  slug              String        @unique
+  sku               String        @unique
+  description       String
+  material          String?
+  finish            String?
+  dimensions        String?
+  weightKg          Float?
+  /// Ordered list of image URLs (S3/CloudFront in production). First image is the main photo.
+  images            String[]      @default([])
+  priceInr          Int
+  priceUsd          Int
+  businessPriceInr  Int
+  businessPriceUsd  Int
+  /// Minimum quantity for business (wholesale) purchases.
+  moq               Int           @default(10)
+  /// Units available to sell. Pending checkouts are already subtracted. Never negative (DB check constraint).
+  stock             Int           @default(0)
+  lowStockThreshold Int           @default(5)
+  status            ProductStatus @default(ACTIVE)
+  isFeatured        Boolean       @default(false)
+  categoryId        String?
+  category          Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  orderItems        OrderItem[]
+  inventoryLogs     InventoryLog[]
+  enquiries         Enquiry[]
+
+  @@index([status, categoryId])
+  @@index([status, isFeatured])
+}
+
+model InventoryLog {
+  id         String          @id @default(cuid())
+  productId  String
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  change     Int
+  stockAfter Int
+  reason     InventoryReason
+  note       String?
+  orderId    String?
+  userId     String?
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime        @default(now())
+
+  @@index([productId, createdAt])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------- orders & payments
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  /// Client-generated key for one checkout attempt; a repeated submit returns the same order.
+  checkoutKey    String      @unique
+  status         OrderStatus @default(PENDING_PAYMENT)
+  currency       Currency
+  provider       PaymentProvider
+  subtotal       Int
+  shipping       Int
+  tax            Int
+  total          Int
+  refundedAmount Int         @default(0)
+  isBusiness     Boolean     @default(false)
+  companyName    String?
+  taxId          String?
+  shipName       String
+  shipPhone      String
+  shipAddress    String
+  shipCity       String
+  shipState      String?
+  shipPostal     String
+  shipCountry    String
+  notes          String?
+  trackingNumber String?
+  stockState     StockState  @default(NONE)
+  /// Pending payment holds stock until this time; then the order expires and stock is released.
+  reservedUntil  DateTime?
+  /// Set when something needs a human (e.g. payment arrived after the stock was released and could not be re-reserved).
+  needsAttention Boolean     @default(false)
+  attentionNote  String?
+  paidAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+  payments       Payment[]
+  events         OrderEvent[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([stockState, reservedUntil])
+}
+
+model OrderItem {
+  id           String       @id @default(cuid())
+  orderId      String
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name         String
+  sku          String
+  purchaseType PurchaseType
+  unitPrice    Int
+  quantity     Int
+  lineTotal    Int
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  orderId           String
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider          PaymentProvider
+  /// Razorpay order id / Stripe Checkout Session id.
+  providerOrderId   String          @unique
+  /// Razorpay payment id / Stripe PaymentIntent id, once known.
+  providerPaymentId String?         @unique
+  amount            Int
+  currency          Currency
+  status            PaymentStatus   @default(CREATED)
+  refundedAmount    Int             @default(0)
+  failureReason     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([orderId])
+}
+
+/// One row per provider event processed, so retried webhook deliveries are ignored.
+model WebhookEvent {
+  id          String          @id @default(cuid())
+  provider    PaymentProvider
+  eventId     String
+  type        String
+  processedAt DateTime        @default(now())
+
+  @@unique([provider, eventId])
+}
+
+model OrderEvent {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type       String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus?
+  message    String?
+  actorId    String?
+  actor      User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+// ---------------------------------------------------------------- enquiries & settings
+
+model Enquiry {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  country   String?
+  type      EnquiryType   @default(GENERAL)
+  productId String?
+  product   Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  quantity  Int?
+  message   String
+  status    EnquiryStatus @default(NEW)
+  followUpAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  notes     EnquiryNote[]
+
+  @@index([status, createdAt])
+}
+
+model EnquiryNote {
+  id        String   @id @default(cuid())
+  enquiryId String
+  enquiry   Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([enquiryId, createdAt])
+}
+
+/// Single-row table (id = 1) for settings the client can change in Admin → Settings.
+model StoreSettings {
+  id                       Int      @id @default(1)
+  /// GST in basis points: 1800 = 18%.
+  gstRateBps               Int      @default(1800)
+  domesticShipping         Int      @default(150000)
+  domesticFreeShippingOver Int      @default(5000000)
+  exportHandling           Int      @default(0)
+  defaultMoq               Int      @default(10)
+  /// Minutes a pending checkout holds stock before it expires.
+  reservationMinutes       Int      @default(30)
+  notifyEmail              String?
+  updatedAt                DateTime @updatedAt
+  updatedById              String?
+}
+
+/// Product photos when STORAGE_DRIVER="db" (hosts with no writable disk, e.g. the Vercel staging site).
+/// Read and written with raw SQL in src/lib/storage.ts.
+model StoredImage {
+  name      String   @id
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+}

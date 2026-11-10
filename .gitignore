@@ -1,0 +1,12 @@
+node_modules
+.next
+*.db
+*.db-journal
+.env
+src/generated
+uploads/*
+!uploads/.gitkeep
+.pgdata
+tests/e2e/output
+tsconfig.tsbuildinfo
+.vercel
