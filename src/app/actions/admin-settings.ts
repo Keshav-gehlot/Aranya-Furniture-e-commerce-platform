@@ -10,8 +10,10 @@ import { randomToken, sha256 } from "@/lib/crypto";
 import { sanitizePermissions } from "@/lib/permissions";
 import { sendEmail } from "@/lib/notify";
 import { site } from "@/config/site";
+import { taxSchema } from "@/lib/tax-rules";
+import { saveTaxSettings } from "@/lib/tax";
 
-export type SettingsState = { error?: string; ok?: string; inviteLink?: string } | undefined;
+export type SettingsState = { error?: string; ok?: string; inviteLink?: string; /** What was typed, so a refused form keeps it. */ values?: Record<string, string> } | undefined;
 
 const INVITE_HOURS = 72;
 
@@ -44,6 +46,17 @@ export async function saveStoreSettings(_: SettingsState, fd: FormData): Promise
   await audit(user, "settings.updated", { type: "StoreSettings", id: "1" }, { ...data, updatedById: undefined });
   revalidatePath("/admin/settings");
   return { ok: "Settings saved." };
+}
+
+export async function saveTaxDetails(_: SettingsState, fd: FormData): Promise<SettingsState> {
+  const user = await requireRecentMfa("settings", "/admin/settings");
+  const typed = Object.fromEntries([...fd].filter((e): e is [string, string] => typeof e[1] === "string" && !e[0].startsWith("$")));
+  const parsed = taxSchema.safeParse(typed);
+  if (!parsed.success) return { error: parsed.error.issues[0].message, values: typed };
+  await saveTaxSettings(parsed.data, user.id);
+  await audit(user, "settings.tax_updated", { type: "TaxSettings", id: "1" }, parsed.data);
+  revalidatePath("/admin/settings");
+  return { ok: "Tax details saved. They now appear on order pages." };
 }
 
 const inviteSchema = z.object({

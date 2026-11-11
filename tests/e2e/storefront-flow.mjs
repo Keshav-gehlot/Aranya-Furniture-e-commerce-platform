@@ -121,8 +121,22 @@ for (const [n, path] of [["admin-dashboard", "/admin"], ["admin-orders", "/admin
   check(`${path} renders`, res.status() === 200 && !a.url().includes("/login") && !a.url().includes("/reauth") , `${res.status()} ${a.url().replace(BASE, "")}`);
   await shot(a, n);
 }
+// tax details: filled in once by the admin, then shown as the seller on orders
+await a.goto(BASE + "/admin/settings", { waitUntil: "networkidle" });
+await a.fill("#tax-gstin", "08ABCDE1234F1Z");
+await a.locator('button:has-text("Save tax details")').click();
+await a.waitForSelector("text=GSTIN must be 15 characters");
+check("a malformed GSTIN is refused and what was typed is kept", (await a.inputValue("#tax-gstin")) === "08ABCDE1234F1Z");
+await a.fill("#tax-legalName", "Aranya Furniture Co. (sample)"); await a.fill("#tax-gstin", "08abcde1234f1z5"); await a.fill("#tax-hsnCode", "9403");
+await a.fill("#tax-address", "Plot 00, Industrial Area\nJodhpur, Rajasthan 342001");
+await a.locator('button:has-text("Save tax details")').click();
+await a.waitForSelector("text=Tax details saved");
+await a.reload({ waitUntil: "networkidle" });
+check("tax details are saved and the state is read from the GSTIN", (await a.inputValue("#tax-gstin")) === "08ABCDE1234F1Z5" && (await a.locator("body").innerText()).includes("Registered in Rajasthan (08)"));
+await shot(a, "admin-settings-tax");
 await a.goto(BASE + "/admin/orders", { waitUntil: "networkidle" });
 await a.locator("table a").first().click(); await a.waitForURL(/admin\/orders\/.+/); await a.waitForLoadState("networkidle"); await shot(a, "admin-order");
+check("the order shows the seller's tax details", (await a.locator("[data-seller-tax]").innerText()).includes("08ABCDE1234F1Z5") && (await a.locator("[data-seller-tax]").innerText()).includes("9403"));
 // image upload through the database driver
 await a.goto(BASE + "/admin/products", { waitUntil: "networkidle" });
 await a.locator("table a").first().click(); await a.waitForURL(/admin\/products\/.+/); await a.waitForLoadState("networkidle");

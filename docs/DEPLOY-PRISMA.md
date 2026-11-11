@@ -10,7 +10,7 @@ Prisma ORM 8 is a release candidate and Prisma Composer is in early access. Trea
 |---|---|
 | Prisma CLI | `prisma@8.0.0-rc.33`. `prisma generate`, `prisma migrate …` and `prisma db seed` no longer exist. |
 | Data contract | `src/prisma/contract.json` and `contract.d.ts`, emitted from `prisma/schema.prisma` (`npm run contract:emit`). Committed. |
-| Migrations | `migrations/app/20261111T0227_init`: the whole schema plus the seven integrity checks (stock never negative, refund bounds, and so on). The old SQL migrations in `prisma/migrations/` are removed on this branch. |
+| Migrations | `migrations/app/20261111T0227_init`: the whole schema plus the seven integrity checks (stock never negative, refund bounds, and so on). `20261111T1020_tax_settings` adds the seller tax details table. The old SQL migrations in `prisma/migrations/` are removed on this branch. |
 | Deploy declaration | `module.ts` (database → service → public URL) and `src/service.ts` (the service's database and settings). |
 | Queries | **Still the Prisma 7 client** (`src/generated/prisma`, now committed, with `@prisma/adapter-pg`). It connects with the database URL that Composer hands the service (`src/lib/platform.ts`). The rewrite to the Prisma 8 query API is not done. Prisma's upgrade guide allows this order: replace the CLI first, keep the old client working, rewrite queries afterwards. |
 

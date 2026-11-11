@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'32b6be56625d0ad0556caddd50ef14e131eff0bb63da2c477a7588bbb9896165'>;
+  StorageHashBase<'f5da6bdb5eff81fb8662a2a451341c04ef118b85a9303a08c5ad6f0cfa813e00'>;
 export type ExecutionHash =
-  ExecutionHashBase<'3caea1dcf641cde5fba9c41f0b0126b47c0dc7dcfd31d3fccd7168114377c482'>;
+  ExecutionHashBase<'66802063bf1fa47cd90078d1f33c6926bbb8e3d330501e4e59d5610dc000f334'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -876,6 +876,19 @@ export namespace Models {
     name: FieldOutputTypes['public']['StoredImage']['name'];
     readonly [RelationKeys]?: never;
   };
+  export type public_TaxSettings = {
+    address: FieldOutputTypes['public']['TaxSettings']['address'];
+    gstin: FieldOutputTypes['public']['TaxSettings']['gstin'];
+    hsnCode: FieldOutputTypes['public']['TaxSettings']['hsnCode'];
+    id: FieldOutputTypes['public']['TaxSettings']['id'];
+    iec: FieldOutputTypes['public']['TaxSettings']['iec'];
+    invoiceNote: FieldOutputTypes['public']['TaxSettings']['invoiceNote'];
+    legalName: FieldOutputTypes['public']['TaxSettings']['legalName'];
+    pan: FieldOutputTypes['public']['TaxSettings']['pan'];
+    updatedAt: FieldOutputTypes['public']['TaxSettings']['updatedAt'];
+    updatedById: FieldOutputTypes['public']['TaxSettings']['updatedById'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_User = {
     accountType: FieldOutputTypes['public']['User']['accountType'];
     address: FieldOutputTypes['public']['User']['address'];
@@ -934,6 +947,7 @@ export declare const models: {
     StaffInvite: Models.public_StaffInvite;
     StoreSettings: Models.public_StoreSettings;
     StoredImage: Models.public_StoredImage;
+    TaxSettings: Models.public_TaxSettings;
     User: Models.public_User;
     WebhookEvent: Models.public_WebhookEvent;
   };
@@ -2449,6 +2463,80 @@ type ContractBase = Omit<
               indexes: readonly [];
               foreignKeys: readonly [];
             };
+            readonly TaxSettings: {
+              columns: {
+                readonly address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly gstin: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly hsnCode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+                readonly iec: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly invoiceNote: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly legalName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly pan: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly updatedById: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly User: {
               columns: {
                 readonly accountType: {
@@ -2819,6 +2907,10 @@ type ContractBase = Omit<
     readonly StoredImage: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'StoredImage';
+    };
+    readonly TaxSettings: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'TaxSettings';
     };
     readonly User: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
     readonly WebhookEvent: {
@@ -4155,6 +4247,71 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly TaxSettings: {
+            readonly fields: {
+              readonly address: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly gstin: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly hsnCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly iec: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly invoiceNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly legalName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly pan: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly updatedById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'TaxSettings';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly address: { readonly column: 'address' };
+                readonly gstin: { readonly column: 'gstin' };
+                readonly hsnCode: { readonly column: 'hsnCode' };
+                readonly id: { readonly column: 'id' };
+                readonly iec: { readonly column: 'iec' };
+                readonly invoiceNote: { readonly column: 'invoiceNote' };
+                readonly legalName: { readonly column: 'legalName' };
+                readonly pan: { readonly column: 'pan' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly updatedById: { readonly column: 'updatedById' };
+              };
+            };
+          };
           readonly User: {
             readonly fields: {
               readonly accountType: {
@@ -4757,6 +4914,18 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'StoredImage';
             readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TaxSettings';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

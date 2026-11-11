@@ -417,6 +417,26 @@ model StoreSettings {
   updatedById              String?
 }
 
+/// Single-row table (id = 1): the seller's tax registration details, filled in Admin → Settings → Tax details.
+/// Read and written with SQL in src/lib/tax.ts (the Prisma 7 client was generated before this table existed).
+model TaxSettings {
+  id          Int      @id @default(1)
+  /// Name on the GST registration, shown as the seller on orders.
+  legalName   String?
+  gstin       String?
+  pan         String?
+  /// Registered address, as it should appear on invoices.
+  address     String?
+  /// Import Export Code, shown on export (USD) orders.
+  iec         String?
+  /// Default HSN code for the goods sold (wooden furniture: 9403).
+  hsnCode     String?
+  /// Free text printed under the seller details, e.g. a jurisdiction line.
+  invoiceNote String?
+  updatedAt   DateTime @default(now())
+  updatedById String?
+}
+
 /// Product photos when STORAGE_DRIVER="db" (hosts with no writable disk, e.g. the Vercel staging site).
 /// Read and written with raw SQL in src/lib/storage.ts.
 model StoredImage {

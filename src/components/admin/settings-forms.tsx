@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useRef, useState } from "react";
-import { inviteStaff, saveStoreSettings, updateStaff } from "@/app/actions/admin-settings";
+import { inviteStaff, saveStoreSettings, saveTaxDetails, updateStaff } from "@/app/actions/admin-settings";
 import { STAFF_PERMISSIONS } from "@/lib/permissions";
 
 function Msg({ s }: { s?: { error?: string; ok?: string } }) {
@@ -35,6 +35,41 @@ export function StoreSettingsForm({ init }: { init: Record<string, string> }) {
       </section>
       <Msg s={state} />
       <button className="btn-primary" disabled={pending}>{pending ? "Saving…" : "Save settings"}</button>
+    </form>
+  );
+}
+
+export function TaxDetailsForm({ init, state: gstState }: { init: Record<string, string>; state: string | null }) {
+  const [state, action, pending] = useActionState(saveTaxDetails, undefined);
+  const vals = state?.values ?? init; // after a refused save, keep what was typed
+  const F = ({ name, label, hint, wide, ...rest }: { name: string; label: string; hint?: string; wide?: boolean } & React.InputHTMLAttributes<HTMLInputElement>) => (
+    <div className={wide ? "sm:col-span-2" : ""}>
+      <label className="label" htmlFor={`tax-${name}`}>{label}</label>
+      <input id={`tax-${name}`} name={name} defaultValue={vals[name]} className="input" autoComplete="off" {...rest} />
+      {hint && <p className="mt-1 text-xs text-stone">{hint}</p>}
+    </div>
+  );
+  return (
+    <form action={action} className="mt-6 space-y-6">
+      <section className="card grid gap-4 p-6 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <h2 className="text-lg">Tax details</h2>
+          <p className="mt-1 text-sm text-stone">Your business's registration details. Once filled in, they appear as the seller on every order page, for customers and staff. Leave a field empty if it does not apply.</p>
+        </div>
+        <F name="legalName" label="Registered business name" wide maxLength={160} placeholder="As on the GST certificate" />
+        <F name="gstin" label="GSTIN" maxLength={20} placeholder="08ABCDE1234F1Z5" className="input ar-mono uppercase" hint={gstState ? `Registered in ${gstState}.` : "15 characters. The first two digits are the state code."} />
+        <F name="pan" label="PAN" maxLength={14} placeholder="ABCDE1234F" className="input ar-mono uppercase" hint="Must match characters 3 to 12 of the GSTIN." />
+        <div className="sm:col-span-2">
+          <label className="label" htmlFor="tax-address">Registered address</label>
+          <textarea id="tax-address" name="address" defaultValue={vals.address} className="input min-h-[84px]" maxLength={400} placeholder={"Plot, street\nCity, state, PIN"} />
+        </div>
+        <F name="hsnCode" label="HSN code for your goods" maxLength={8} inputMode="numeric" placeholder="9403" className="input ar-mono" hint="4, 6 or 8 digits. 9403 covers most furniture." />
+        <F name="iec" label="Import Export Code (IEC)" maxLength={14} placeholder="ABCDE1234F" className="input ar-mono uppercase" hint="Shown on export (USD) orders only." />
+        <F name="invoiceNote" label="Note under the seller details" wide maxLength={300} placeholder="e.g. Subject to Jodhpur jurisdiction." />
+        <p className="text-sm text-stone sm:col-span-2">The GST rate itself is set above, under Tax & shipping.</p>
+      </section>
+      <Msg s={state} />
+      <button className="btn-primary" disabled={pending}>{pending ? "Saving…" : "Save tax details"}</button>
     </form>
   );
 }
