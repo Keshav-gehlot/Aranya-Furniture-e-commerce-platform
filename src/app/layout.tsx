@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   // A staging deployment must never be indexed.
   robots: isStaging() ? { index: false, follow: false } : undefined,
 };
+// Rendered per request: on Prisma Compute the settings (staging flag, site URL) exist only at run time.
+export const dynamic = "force-dynamic";
 export const viewport: Viewport = { themeColor: "#8b1c22", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

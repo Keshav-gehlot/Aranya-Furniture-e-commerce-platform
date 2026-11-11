@@ -19,13 +19,10 @@ if (!DB) throw new Error("Set E2E_DATABASE_URL");
 const results = [];
 const check = (name, ok, extra = "") => { results.push({ name, ok }); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${extra ? ` — ${extra}` : ""}`); };
 
-// 1. fresh database from the committed migration + seed
+// 1. fresh database from the committed migrations (migrations/) + seed
 const c = new pg.Client({ connectionString: DB });
 await c.connect();
-await c.query("DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;");
-for (const m of fs.readdirSync(path.join(ROOT, "prisma/migrations")).filter((d) => !d.endsWith(".toml")).sort()) {
-  await c.query(fs.readFileSync(path.join(ROOT, "prisma/migrations", m, "migration.sql"), "utf8"));
-}
+await c.query("DROP SCHEMA IF EXISTS prisma_contract CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;");
 await c.end();
 const env = {
   ...process.env,
@@ -43,6 +40,7 @@ const env = {
   ADMIN_PASSWORD: "Owner-Password-123",
   UPLOAD_DIR: path.join(OUT, "uploads"),
 };
+execSync("npx prisma db migrate", { cwd: ROOT, env, stdio: "inherit" });
 execSync("npx tsx prisma/seed.ts", { cwd: ROOT, env, stdio: "inherit" });
 
 // 2. servers

@@ -66,12 +66,34 @@ check("order page confirms payment", (await p.locator("body").innerText()).inclu
 await shot(p, "order");
 const orderUrl = p.url();
 await p.goto(BASE + "/account", { waitUntil: "networkidle" }); await shot(p, "account");
+
+// a signed-in customer must not reach, or even be shown, the admin panel
+const ADMIN_PATHS = ["/admin", "/admin/orders", "/admin/products", "/admin/customers", "/admin/settings", "/admin/settings/staff", "/admin/settings/audit", "/admin/mfa/setup", "/admin/reauth"];
+check("customer account page has no link to the admin panel", (await p.locator('a[href^="/admin"]').count()) === 0);
+for (const path of ADMIN_PATHS) {
+  await p.goto(BASE + path, { waitUntil: "networkidle" });
+  const u = new URL(p.url());
+  check(`customer is turned away from ${path}`, !u.pathname.startsWith("/admin") && !(await p.locator("body").innerText()).includes("Audit log"), u.pathname);
+}
+check("customer storefront has no link to the admin panel", (await p.locator('a[href^="/admin"]').count()) === 0);
+const upCustomer = await p.evaluate(async () => { const fd = new FormData(); fd.append("files", new Blob(["x"], { type: "image/png" }), "x.png"); return (await fetch("/api/admin/upload", { method: "POST", body: fd })).status; });
+check("customer cannot use the admin upload API", upCustomer === 403, String(upCustomer));
+await p.goto(BASE + "/", { waitUntil: "networkidle" }); await shot(p, "home");
+await p.goto(BASE + "/products", { waitUntil: "networkidle" }); await shot(p, "products");
+await p.goto(BASE + "/trade", { waitUntil: "networkidle" }); await shot(p, "trade");
 await ctx.close();
 
 // another visitor must not see that order
 const anon = await b.newContext(); const ap = await anon.newPage();
 const r = await ap.goto(orderUrl); check("a signed-out visitor cannot open someone's order", !ap.url().includes("/orders/") || r.status() === 404, ap.url());
 const ar = await ap.goto(BASE + "/admin"); check("admin redirects signed-out visitors to sign-in", ap.url().includes("/login"), ap.url());
+for (const path of ADMIN_PATHS.slice(1)) {
+  await ap.goto(BASE + path);
+  check(`signed-out visitor is sent to sign-in from ${path}`, new URL(ap.url()).pathname === "/login", new URL(ap.url()).pathname);
+}
+check("signed-out storefront has no link to the admin panel", (await (await ap.goto(BASE + "/"), ap).locator('a[href^="/admin"]').count()) === 0);
+const upAnon = await ap.evaluate(async () => { const fd = new FormData(); fd.append("files", new Blob(["x"], { type: "image/png" }), "x.png"); return (await fetch("/api/admin/upload", { method: "POST", body: fd })).status; });
+check("signed-out visitor cannot use the admin upload API", upAnon === 403, String(upAnon));
 await anon.close();
 
 // ---------- admin: sign in, set up two-step, browse panel ----------
@@ -99,8 +121,22 @@ for (const [n, path] of [["admin-dashboard", "/admin"], ["admin-orders", "/admin
   check(`${path} renders`, res.status() === 200 && !a.url().includes("/login") && !a.url().includes("/reauth") , `${res.status()} ${a.url().replace(BASE, "")}`);
   await shot(a, n);
 }
+// tax details: filled in once by the admin, then shown as the seller on orders
+await a.goto(BASE + "/admin/settings", { waitUntil: "networkidle" });
+await a.fill("#tax-gstin", "08ABCDE1234F1Z");
+await a.locator('button:has-text("Save tax details")').click();
+await a.waitForSelector("text=GSTIN must be 15 characters");
+check("a malformed GSTIN is refused and what was typed is kept", (await a.inputValue("#tax-gstin")) === "08ABCDE1234F1Z");
+await a.fill("#tax-legalName", "Aranya Furniture Co. (sample)"); await a.fill("#tax-gstin", "08abcde1234f1z5"); await a.fill("#tax-hsnCode", "9403");
+await a.fill("#tax-address", "Plot 00, Industrial Area\nJodhpur, Rajasthan 342001");
+await a.locator('button:has-text("Save tax details")').click();
+await a.waitForSelector("text=Tax details saved");
+await a.reload({ waitUntil: "networkidle" });
+check("tax details are saved and the state is read from the GSTIN", (await a.inputValue("#tax-gstin")) === "08ABCDE1234F1Z5" && (await a.locator("body").innerText()).includes("Registered in Rajasthan (08)"));
+await shot(a, "admin-settings-tax");
 await a.goto(BASE + "/admin/orders", { waitUntil: "networkidle" });
 await a.locator("table a").first().click(); await a.waitForURL(/admin\/orders\/.+/); await a.waitForLoadState("networkidle"); await shot(a, "admin-order");
+check("the order shows the seller's tax details", (await a.locator("[data-seller-tax]").innerText()).includes("08ABCDE1234F1Z5") && (await a.locator("[data-seller-tax]").innerText()).includes("9403"));
 // image upload through the database driver
 await a.goto(BASE + "/admin/products", { waitUntil: "networkidle" });
 await a.locator("table a").first().click(); await a.waitForURL(/admin\/products\/.+/); await a.waitForLoadState("networkidle");

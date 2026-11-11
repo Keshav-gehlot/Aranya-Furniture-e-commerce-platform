@@ -1,0 +1,98 @@
+[
+  {
+    "id": "table.TaxSettings",
+    "label": "Create table \"TaxSettings\"",
+    "summary": "Creates table \"TaxSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TaxSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TaxSettings\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TaxSettings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TaxSettings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TaxSettings\"",
+        "sql": "CREATE TABLE \"public\".\"TaxSettings\" (\n  \"address\" text,\n  \"gstin\" text,\n  \"hsnCode\" text,\n  \"id\" int4 DEFAULT 1 NOT NULL,\n  \"iec\" text,\n  \"invoiceNote\" text,\n  \"legalName\" text,\n  \"pan\" text,\n  \"updatedAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"updatedById\" text,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TaxSettings\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TaxSettings\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TaxSettings\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.TaxSettings.TaxSettings_singleton",
+    "label": "Add check constraint \"TaxSettings_singleton\" on \"TaxSettings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "TaxSettings_singleton",
+        "table": "TaxSettings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TaxSettings_singleton\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TaxSettings_singleton",
+          "public",
+          "\"public\".\"TaxSettings\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TaxSettings_singleton\" on \"TaxSettings\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"TaxSettings_singleton\"",
+        "sql": "ALTER TABLE \"public\".\"TaxSettings\" ADD CONSTRAINT \"TaxSettings_singleton\" CHECK (\"id\" = 1)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"TaxSettings_singleton\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "TaxSettings_singleton",
+          "public",
+          "\"public\".\"TaxSettings\"",
+          "c"
+        ]
+      }
+    ]
+  }
+]

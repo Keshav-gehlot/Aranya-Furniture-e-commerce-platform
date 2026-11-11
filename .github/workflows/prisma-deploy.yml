@@ -1,0 +1,41 @@
+# Builds the app and deploys it to Prisma Compute with Prisma Composer (module.ts).
+# Needs the Prisma GitHub App connected to this repository (Prisma Console → import this repo, or `prisma git connect`).
+# A push to the default branch deploys production. A push to any other branch deploys a preview with its own empty database.
+# Setup and settings: docs/DEPLOY-PRISMA.md.
+name: prisma-deploy
+on:
+  push:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deploy:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    env:
+      # Non-secret settings, read on every deploy. Change them in GitHub → Settings → Secrets and variables → Actions → Variables.
+      # Staging shows a banner, blocks search engines and allows simulated payments.
+      # Before real trading set the variable DEPLOYMENT_STAGE to "production" and ALLOW_DEMO_PAYMENTS to "false".
+      DEPLOYMENT_STAGE: ${{ vars.DEPLOYMENT_STAGE || 'staging' }}
+      ALLOW_DEMO_PAYMENTS: ${{ vars.ALLOW_DEMO_PAYMENTS || 'true' }}
+      # First start only: the first admin account is created with this address and the ADMIN_PASSWORD secret.
+      ADMIN_EMAIL: ${{ vars.ADMIN_EMAIL || 'admin@aranya.example' }}
+      SEED_SAMPLE_PRODUCTS: ${{ vars.SEED_SAMPLE_PRODUCTS }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      # Secrets. Prisma keeps its own copy per environment; these only fill in a name it does not have yet.
+      # The deploy stops early, naming the secret, if one of the first three is missing in both places.
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      MFA_ENCRYPTION_KEY: ${{ secrets.MFA_ENCRYPTION_KEY }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: oven-sh/setup-bun@v2
+      - run: npm ci
+      - uses: prisma/cloud-deploy-action@v1
+        with:
+          build-command: npm run build

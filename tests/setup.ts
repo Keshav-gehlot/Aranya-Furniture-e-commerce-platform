@@ -1,7 +1,8 @@
 // Tests run against a real PostgreSQL database (TEST_DATABASE_URL). The schema is rebuilt from
-// the committed migration before the run, so tests also prove the migration works.
+// the committed migrations (migrations/, applied with `prisma db migrate`) before the run,
+// so tests also prove the migrations work.
 import "dotenv/config";
-import fs from "fs";
+import { execSync } from "child_process";
 import path from "path";
 import { Client } from "pg";
 import { beforeAll } from "vitest";
@@ -21,10 +22,12 @@ beforeAll(async () => {
   done = true;
   const c = new Client({ connectionString: url });
   await c.connect();
-  await c.query("DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;");
-  const dir = path.resolve(__dirname, "../prisma/migrations");
-  for (const m of fs.readdirSync(dir).filter((d) => fs.statSync(path.join(dir, d)).isDirectory()).sort()) {
-    await c.query(fs.readFileSync(path.join(dir, m, "migration.sql"), "utf8"));
-  }
+  // prisma_contract is where Prisma 8 records which migrations a database has had.
+  await c.query("DROP SCHEMA IF EXISTS prisma_contract CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;");
   await c.end();
+  execSync("npx prisma db migrate", {
+    cwd: path.resolve(__dirname, ".."),
+    env: { ...process.env, DATABASE_URL: url },
+    stdio: "pipe",
+  });
 });

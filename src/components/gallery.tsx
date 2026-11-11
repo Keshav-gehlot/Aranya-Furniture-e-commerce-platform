@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Ph, isPhoto } from "./placeholder";
 
-/** Sharp-edged photographs; thumbnails get the 2px radius. Falls back to labelled placeholders. */
+/** Sharp-edged photographs; thumbnails get the 2px radius. Falls back to sample drawings. */
 export function Gallery({ images, name }: { images: string[]; name: string }) {
   const photos = images.filter(isPhoto);
   const [i, setI] = useState(0);
@@ -11,8 +11,8 @@ export function Gallery({ images, name }: { images: string[]; name: string }) {
       <div className="grid gap-4 lg:sticky lg:top-24 lg:self-start">
         <Ph shot="product" subject={name} style={{ aspectRatio: "1 / 1" }} />
         <div className="grid grid-cols-2 gap-4">
-          <Ph shot="cardAlt" style={{ aspectRatio: "4 / 5" }} />
-          <Ph shot="card" style={{ aspectRatio: "4 / 5" }} />
+          <Ph shot="cardAlt" subject={name} style={{ aspectRatio: "4 / 5" }} />
+          <Ph shot="card" subject={name} dark style={{ aspectRatio: "4 / 5" }} />
         </div>
       </div>
     );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { isPhoto } from "@/components/placeholder";
+import { isPhoto, Ph } from "@/components/placeholder";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
@@ -50,7 +50,7 @@ export default async function AdminProducts({ searchParams }: { searchParams: Pr
                 <tr key={p.id}>
                   <td>
                     <div className="flex items-center gap-3">
-                      {isPhoto(p.images[0]) ? <img src={p.images[0]} alt="" className="h-10 w-10 rounded-xs bg-sunken object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xs bg-hover text-[10px] text-ink-3" title="No photo yet">No photo</span>}
+                      {isPhoto(p.images[0]) ? <img src={p.images[0]} alt="" className="h-10 w-10 rounded-xs bg-sunken object-cover" /> : <Ph shot="product" subject={p.name} bare className="!h-10 !w-10 shrink-0 rounded-xs" />}
                       <div>
                         <Link href={`/admin/products/${p.id}`} className="font-semibold hover:text-forest">{p.name}</Link>
                         <p className="text-xs text-stone">{p.sku}{p.category ? ` · ${p.category.name}` : ""}</p>

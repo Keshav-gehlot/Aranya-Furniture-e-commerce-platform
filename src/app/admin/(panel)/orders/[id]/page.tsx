@@ -9,6 +9,8 @@ import { resolveAttention } from "@/app/actions/admin";
 import { PageHeader } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { Totals } from "@/components/order-summary";
+import { SellerTax } from "@/components/seller-tax";
+import { getTaxSettings } from "@/lib/tax";
 import { CancelOrder, OrderUpdate, RefundForm } from "@/components/admin/order-actions";
 
 export const metadata = { title: "Order" };
@@ -27,6 +29,7 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
   });
   if (!o) notFound();
   const c = o.currency;
+  const tax = await getTaxSettings();
   const next = ADMIN_TRANSITIONS[o.status] ?? [];
   const canRefund = can(user, "refunds");
   const recent = await hasRecentMfa();
@@ -80,6 +83,7 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
                 {o.user.phone && <p>{o.user.phone}</p>}
                 <p className="mt-2 text-xs text-stone">{o.user.accountType === "BUSINESS" ? "Business account" : "Retail account"}{o.user.businessVerified ? " · verified" : ""}</p>
                 {o.companyName && (<><p className="label mt-4">Invoice to</p><p>{o.companyName}</p>{o.taxId && <p className="text-stone">Tax ID: {o.taxId}</p>}</>)}
+                <SellerTax tax={tax} currency={c} />
               </div>
               <div className="card p-6 text-sm">
                 <p className="label">Ship to</p>

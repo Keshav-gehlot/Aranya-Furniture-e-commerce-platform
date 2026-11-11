@@ -8,6 +8,8 @@ import { confirmPayment, PAID_STATES } from "@/lib/orders";
 import { StatusBadge } from "@/components/status-badge";
 import { ClearCartOnMount } from "@/components/clear-cart";
 import { Totals } from "@/components/order-summary";
+import { SellerTax } from "@/components/seller-tax";
+import { getTaxSettings } from "@/lib/tax";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Order" };
@@ -21,6 +23,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   let order = await load();
   // Customers only ever see their own orders (staff use the admin panel).
   if (!order || order.userId !== user.id) notFound();
+  const tax = await getTaxSettings();
 
   // Returning from Stripe: ask Stripe directly whether the session is paid. The redirect alone proves nothing.
   if (sp.session_id && order.provider === "STRIPE" && order.status === "PENDING_PAYMENT" && stripeEnabled()) {
@@ -97,6 +100,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <p className="font-medium">{order.shipName}</p>
             <p className="text-stone">{order.shipAddress}<br />{order.shipCity}{order.shipState ? `, ${order.shipState}` : ""} {order.shipPostal}<br />{order.shipCountry}<br />{order.shipPhone}</p>
             {order.companyName && (<><p className="label mt-4">Company</p><p>{order.companyName}{order.taxId ? ` · ${order.taxId}` : ""}</p></>)}
+            <SellerTax tax={tax} currency={c} />
           </div>
           <div className="card p-6 text-sm">
             <p className="label">Payment</p>

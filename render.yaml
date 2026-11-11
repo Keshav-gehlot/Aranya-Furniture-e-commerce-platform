@@ -1,0 +1,51 @@
+# Render Blueprint: the store (Next.js) and its PostgreSQL database, both in Singapore.
+# Setup, limits and how to go live: docs/DEPLOY-RENDER.md
+databases:
+  - name: aranya-db
+    plan: free # expires 30 days after creation unless upgraded: see docs/DEPLOY-RENDER.md
+    region: singapore
+    postgresMajorVersion: "17"
+    databaseName: aranya
+    user: aranya_app
+    ipAllowList: [] # no access from the internet; the web service connects over Render's private network
+
+services:
+  - type: web
+    name: aranya-furniture
+    runtime: node
+    region: singapore
+    plan: free
+    # Render sets NODE_ENV=production, which would skip the build tools (Tailwind, TypeScript, Prisma CLI).
+    buildCommand: npm ci --include=dev && npm run build
+    # Applies any new migrations in migrations/, then starts the site. (Free services have no pre-deploy step.)
+    startCommand: npm run start:render
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aranya-db
+          property: connectionString
+      # Generated once by Render, never stored in the repository.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MFA_ENCRYPTION_KEY # never change it: that invalidates every authenticator setup
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      # First start only: the first admin account is created from these two when the database has no admin.
+      - key: ADMIN_EMAIL
+        value: admin@aranya.example
+      - key: ADMIN_PASSWORD # read it in Render → aranya-furniture → Environment
+        generateValue: true
+      # Staging: banner on every page, hidden from search engines, simulated payments allowed.
+      # Before real trading set DEPLOYMENT_STAGE to production and ALLOW_DEMO_PAYMENTS to false.
+      - key: DEPLOYMENT_STAGE
+        value: staging
+      - key: ALLOW_DEMO_PAYMENTS
+        value: "true"
+      # Product photos go in the database: free services have no persistent disk.
+      - key: STORAGE_DRIVER
+        value: db

@@ -17,14 +17,13 @@ export async function Header() {
   const [user, currency, mode] = await Promise.all([getCurrentUser(), getCurrency(), getBuyMode()]);
   const accountHref = !user ? "/login" : user.role === "CUSTOMER" ? "/account" : "/admin";
   const accountLabel = !user ? "Sign in" : user.role === "CUSTOMER" ? "My account" : "Admin panel";
-  const tel = site.contact.phone.replace(/\s/g, "");
 
   return (
     <>
       <div className="ar-strip">
         <span>Trade prices from {site.business.defaultMoq} units · GST invoices · Export in USD</span>
         <span className="hidden sm:inline">
-          <a href={`tel:${tel}`}>{site.contact.phone}</a> · <Link href="/account">Track an order</Link>
+          <Link href="/account">Track an order</Link>
         </span>
       </div>
       <header className="ar-header">

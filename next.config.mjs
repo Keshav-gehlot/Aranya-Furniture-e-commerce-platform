@@ -18,8 +18,9 @@ const csp = [
 ].join("; ");
 
 const nextConfig = {
-  // Standalone output is for the Docker image (AWS). Vercel builds its own output.
-  output: process.env.VERCEL ? undefined : "standalone",
+  // Standalone output is what Prisma Compute and the Docker image run. Vercel builds its own output,
+  // and Render runs `next start` on the normal build.
+  output: process.env.VERCEL || process.env.RENDER ? undefined : "standalone",
   poweredByHeader: false,
   serverExternalPackages: ["pg", "@prisma/adapter-pg"],
   images: { unoptimized: true },

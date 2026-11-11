@@ -1,4 +1,5 @@
 import "server-only";
+import "./platform";
 import crypto from "crypto";
 
 function mfaKey() {

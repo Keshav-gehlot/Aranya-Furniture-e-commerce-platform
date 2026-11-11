@@ -3,10 +3,13 @@ node_modules
 *.db
 *.db-journal
 .env
-src/generated
 uploads/*
 !uploads/.gitkeep
 .pgdata
 tests/e2e/output
 tsconfig.tsbuildinfo
 .vercel
+# Prisma Composer / `prisma dev` local state
+.alchemy
+.prisma-composer
+.prisma
