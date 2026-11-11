@@ -4,8 +4,9 @@ The store and its PostgreSQL database on Render, described by `render.yaml` (a R
 
 | | |
 |---|---|
-| Web service | `aranya-furniture`, Node 22, free plan |
-| Database | `aranya-db`, PostgreSQL 17, free plan, reachable only from the web service |
+| Web service | `aranya-furniture-rcas`, Node 22, free plan: https://aranya-furniture-rcas.onrender.com |
+| Database | `aranya-db-rcas`, PostgreSQL 17, free plan, reachable only from the web service |
+| Blueprint | `aranya-furniture` (Render adds the `-rcas` suffix to the resources it creates) |
 | Source | branch `prisma-compute`; a push to it redeploys |
 
 ## How a deploy runs
@@ -17,7 +18,7 @@ The store and its PostgreSQL database on Render, described by `render.yaml` (a R
 ## Signing in as admin
 
 - Address: `admin@aranya.example` (`ADMIN_EMAIL`).
-- Password: Render generated it. Read it in Render → `aranya-furniture` → Environment → `ADMIN_PASSWORD`.
+- Password: Render generated it. Read it in Render → `aranya-furniture-rcas` → Environment → `ADMIN_PASSWORD`.
 - The first sign-in asks you to set up two-step sign-in with an authenticator app.
 
 Changing `ADMIN_PASSWORD` later does not change the account's password; it is only read when the database has no admin.
@@ -30,8 +31,8 @@ Render generated `JWT_SECRET`, `MFA_ENCRYPTION_KEY`, `CRON_SECRET` and `ADMIN_PA
 
 ## Limits of the free plan
 
-- **The free database is deleted 30 days after it is created** unless it is upgraded to a paid plan (Render emails a warning first). Upgrade it in Render → `aranya-db`, or change `plan:` in `render.yaml`. There are no backups on the free plan.
-- **The free web service sleeps after about 15 minutes without traffic.** The next visit takes up to a minute to wake it.
+- **The free database expires 30 days after it is created.** It then stops working, and Render deletes it 14 days later unless it is upgraded to a paid plan (from about $6 a month). Upgrade it in Render → the database → or change `plan:` in `render.yaml`. The free plan has no backups, and a workspace can have only one free database.
+- **The free web service sleeps after 15 minutes without traffic.** The next visit takes about a minute to wake it. All free services in the workspace share 750 running hours a month.
 - **Photos** are stored in the database (4 MB each): free services have no persistent disk.
 - **Unpaid checkouts**: nothing calls `/api/cron/release-reservations` on a schedule (Render cron jobs are paid). Checkout releases expired holds itself before reserving stock, so nothing oversells.
 - **Email**: no `RESEND_API_KEY` is set, so order, enquiry and staff-invite emails are not sent. Invite links are shown in the admin panel.

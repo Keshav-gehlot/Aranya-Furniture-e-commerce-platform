@@ -2,7 +2,7 @@
 # Setup, limits and how to go live: docs/DEPLOY-RENDER.md
 databases:
   - name: aranya-db
-    plan: free # deleted by Render 30 days after creation unless upgraded: see docs/DEPLOY-RENDER.md
+    plan: free # expires 30 days after creation unless upgraded: see docs/DEPLOY-RENDER.md
     region: singapore
     postgresMajorVersion: "17"
     databaseName: aranya
