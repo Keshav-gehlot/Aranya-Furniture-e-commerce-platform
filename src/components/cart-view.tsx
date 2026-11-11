@@ -33,7 +33,7 @@ export function CartView({ currency }: { currency: "INR" | "USD" }) {
           return (
             <li key={l.productId + l.type} className="ar-line">
               <Link href={`/products/${l.slug}`} className="ar-line__img" aria-label={l.name}>
-                {isPhoto(l.image) ? <img src={l.image} alt="" className="h-full w-full object-cover" /> : <Ph shot="product" bare className="h-full" />}
+                {isPhoto(l.image) ? <img src={l.image} alt="" className="h-full w-full object-cover" /> : <Ph shot="product" subject={l.name} bare className="h-full" />}
               </Link>
               <div className="ar-line__body">
                 <Link href={`/products/${l.slug}`} className="ar-line__name">{l.name}</Link>

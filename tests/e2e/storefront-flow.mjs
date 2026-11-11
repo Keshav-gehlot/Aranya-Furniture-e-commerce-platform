@@ -66,12 +66,34 @@ check("order page confirms payment", (await p.locator("body").innerText()).inclu
 await shot(p, "order");
 const orderUrl = p.url();
 await p.goto(BASE + "/account", { waitUntil: "networkidle" }); await shot(p, "account");
+
+// a signed-in customer must not reach, or even be shown, the admin panel
+const ADMIN_PATHS = ["/admin", "/admin/orders", "/admin/products", "/admin/customers", "/admin/settings", "/admin/settings/staff", "/admin/settings/audit", "/admin/mfa/setup", "/admin/reauth"];
+check("customer account page has no link to the admin panel", (await p.locator('a[href^="/admin"]').count()) === 0);
+for (const path of ADMIN_PATHS) {
+  await p.goto(BASE + path, { waitUntil: "networkidle" });
+  const u = new URL(p.url());
+  check(`customer is turned away from ${path}`, !u.pathname.startsWith("/admin") && !(await p.locator("body").innerText()).includes("Audit log"), u.pathname);
+}
+check("customer storefront has no link to the admin panel", (await p.locator('a[href^="/admin"]').count()) === 0);
+const upCustomer = await p.evaluate(async () => { const fd = new FormData(); fd.append("files", new Blob(["x"], { type: "image/png" }), "x.png"); return (await fetch("/api/admin/upload", { method: "POST", body: fd })).status; });
+check("customer cannot use the admin upload API", upCustomer === 403, String(upCustomer));
+await p.goto(BASE + "/", { waitUntil: "networkidle" }); await shot(p, "home");
+await p.goto(BASE + "/products", { waitUntil: "networkidle" }); await shot(p, "products");
+await p.goto(BASE + "/trade", { waitUntil: "networkidle" }); await shot(p, "trade");
 await ctx.close();
 
 // another visitor must not see that order
 const anon = await b.newContext(); const ap = await anon.newPage();
 const r = await ap.goto(orderUrl); check("a signed-out visitor cannot open someone's order", !ap.url().includes("/orders/") || r.status() === 404, ap.url());
 const ar = await ap.goto(BASE + "/admin"); check("admin redirects signed-out visitors to sign-in", ap.url().includes("/login"), ap.url());
+for (const path of ADMIN_PATHS.slice(1)) {
+  await ap.goto(BASE + path);
+  check(`signed-out visitor is sent to sign-in from ${path}`, new URL(ap.url()).pathname === "/login", new URL(ap.url()).pathname);
+}
+check("signed-out storefront has no link to the admin panel", (await (await ap.goto(BASE + "/"), ap).locator('a[href^="/admin"]').count()) === 0);
+const upAnon = await ap.evaluate(async () => { const fd = new FormData(); fd.append("files", new Blob(["x"], { type: "image/png" }), "x.png"); return (await fetch("/api/admin/upload", { method: "POST", body: fd })).status; });
+check("signed-out visitor cannot use the admin upload API", upAnon === 403, String(upAnon));
 await anon.close();
 
 // ---------- admin: sign in, set up two-step, browse panel ----------
