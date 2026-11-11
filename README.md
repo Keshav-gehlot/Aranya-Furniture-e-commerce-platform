@@ -40,6 +40,7 @@ npx next build && E2E_DATABASE_URL=postgresql://app:app@127.0.0.1:5433/furniture
 ## Documentation
 
 - [docs/DEPLOY-PRISMA.md](docs/DEPLOY-PRISMA.md): deploying on Prisma Compute with Prisma Composer, what is on Prisma 8 and what is not
+- [docs/DEPLOY-RENDER.md](docs/DEPLOY-RENDER.md): staging on Render (`render.yaml`)
 - [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md): staging on Vercel + Supabase
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): AWS hosting decision, first deployment, payments, DNS, rollback, backup and restore
 - [docs/SECURITY.md](docs/SECURITY.md): roles and permissions, sign-in and MFA, how payments are protected, security checklist

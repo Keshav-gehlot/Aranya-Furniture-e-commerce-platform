@@ -20,6 +20,8 @@ export function siteUrl() {
   if (explicit) return explicit.replace(/\/$/, "");
   // Vercel sets this to the production domain of the project (no protocol).
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  // Render sets this to the service's public address, e.g. https://aranya-furniture.onrender.com.
+  if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "");
   // Prisma Compute: no fixed public URL is known at build time; set NEXT_PUBLIC_SITE_URL once the site has its address.
   return "http://localhost:3000";
 }
