@@ -1,3 +1,4 @@
+import "./platform";
 /**
  * Reads an optional setting. Secrets Manager placeholders created by Terraform hold "unset"
  * until someone stores the real value, so treat that as missing.
@@ -19,5 +20,6 @@ export function siteUrl() {
   if (explicit) return explicit.replace(/\/$/, "");
   // Vercel sets this to the production domain of the project (no protocol).
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  // Prisma Compute: no fixed public URL is known at build time; set NEXT_PUBLIC_SITE_URL once the site has its address.
   return "http://localhost:3000";
 }

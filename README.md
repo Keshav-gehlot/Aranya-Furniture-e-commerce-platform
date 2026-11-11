@@ -11,7 +11,7 @@ Production e-commerce platform for a furniture business that sells domestically 
 | Security | Invite-only staff, TOTP two-step sign-in for every staff account, per-module permissions, instant revocation, audit log, WAF, private database |
 | AWS | Terraform for ECS Fargate + ALB + RDS PostgreSQL + S3/CloudFront + WAF + Secrets Manager + CloudWatch; GitHub Actions deploys |
 
-**Stack:** Next.js 15 · React 19 · TypeScript · Prisma 7 + PostgreSQL 17 · Tailwind CSS · Terraform · GitHub Actions
+**Stack:** Next.js 15 · React 19 · TypeScript · PostgreSQL 17 · Prisma (8 CLI, contract and migrations; queries still on the 7 client, see [docs/DEPLOY-PRISMA.md](docs/DEPLOY-PRISMA.md)) · Tailwind CSS · Terraform · GitHub Actions
 
 ## Run it locally (Windows, macOS, Linux)
 
@@ -33,12 +33,14 @@ Locally, without payment keys, checkout shows a **Complete demo payment** button
 
 ```bash
 npm run typecheck
-npm test                      # 37 integration tests against real PostgreSQL (TEST_DATABASE_URL)
+npm test                      # 44 integration tests against real PostgreSQL (TEST_DATABASE_URL)
 npx next build && E2E_DATABASE_URL=postgresql://app:app@127.0.0.1:5433/furniture npm run test:e2e   # 31 browser checks
 ```
 
 ## Documentation
 
+- [docs/DEPLOY-PRISMA.md](docs/DEPLOY-PRISMA.md): deploying on Prisma Compute with Prisma Composer, what is on Prisma 8 and what is not
+- [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md): staging on Vercel + Supabase
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): AWS hosting decision, first deployment, payments, DNS, rollback, backup and restore
 - [docs/SECURITY.md](docs/SECURITY.md): roles and permissions, sign-in and MFA, how payments are protected, security checklist
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): day-to-day runbook (staff leaving, lost phone, refunds, stuck orders, alarms)
@@ -60,7 +62,11 @@ src/lib/auth.ts            sessions, requireStaff / requirePermission / requireR
 src/lib/permissions.ts     roles and module permissions
 src/lib/checkout.ts        order creation, stock holds, payment start
 src/lib/orders.ts          payment confirmation, expiry, refunds, allowed status changes
-prisma/                    schema, migrations, seed
+prisma/                    schema (source of the data contract), seed
+migrations/                Prisma 8 migrations, applied with `npm run db:migrate` and on every deploy
+module.ts, src/service.ts  Prisma Composer declaration: database, service, public URL
+src/prisma/                emitted data contract (committed)
+src/generated/prisma/      Prisma 7 query client (committed; the Prisma 8 CLI cannot regenerate it)
 infra/terraform/           AWS infrastructure
 .github/workflows/         CI and deploy pipelines
 tests/                     integration and end-to-end tests

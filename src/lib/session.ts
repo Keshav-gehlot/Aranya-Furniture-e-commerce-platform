@@ -1,3 +1,4 @@
+import "./platform";
 // Edge-safe token helpers (used by middleware and server code). Authoritative checks live in auth.ts.
 import { SignJWT, jwtVerify } from "jose";
 

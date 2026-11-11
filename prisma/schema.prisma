@@ -1,6 +1,8 @@
 // Furniture store — PostgreSQL schema (Prisma 7, driver adapter: @prisma/adapter-pg)
 // Money is stored in the smallest currency unit (paise for INR, cents for USD).
-// Change the schema with `npm run db:migrate:dev -- --name <change>`; production uses `prisma migrate deploy`.
+// This file is the source of the Prisma 8 data contract (src/prisma/contract.json).
+// Change the schema: edit here, `npm run contract:emit`, `npx prisma migration plan --name <change>`, then `npm run db:migrate`.
+// Deploys apply the committed migrations in migrations/. See docs/DEPLOY-PRISMA.md.
 
 generator client {
   provider = "prisma-client"

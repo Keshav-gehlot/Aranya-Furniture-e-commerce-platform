@@ -35,8 +35,7 @@ To take real test payments, add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZOR
 
 ## Database
 
-- The schema in `prisma/migrations/` was applied through the Supabase SQL tools, not `prisma migrate deploy`. Before the first `prisma migrate deploy` against this database, mark both migrations as applied:
-  `npx prisma migrate resolve --applied 20261017000000_init` and `--applied 20261110000000_stored_images`.
+- The schema was applied through the Supabase SQL tools from the original SQL migrations. The repository now uses Prisma 8 migrations (`migrations/`). Before running `npx prisma db migrate` against this database, check it with `npx prisma db verify` and record it as up to date with `npx prisma db sign` (see `DEPLOY-PRISMA.md`).
 - The app connects as its own role, `aranya_app`, which owns the tables. It does not use the Supabase Data API.
 - Every table has row level security on with no policies, and `anon` / `authenticated` have no grants. So the project's public API key cannot read or write anything.
 - The free plan pauses a project after about a week without traffic. Restore it from the Supabase dashboard.

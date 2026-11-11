@@ -28,5 +28,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Node.js runtime: the session check reads settings that Prisma Compute provides through the Composer service.
+  runtime: "nodejs",
   matcher: ["/account/:path*", "/checkout/:path*", "/orders/:path*", "/admin/:path*"],
 };
